@@ -1,0 +1,297 @@
+<?php
+
+/**
+ * @file
+ * Provides API for adding webuipopover to pages.
+ */
+
+/**
+ * Implements hook_init().
+ */
+function webuipopover_init() {
+  if (variable_get('webuipopover_always_add', 0)) {
+    $selectors = array();
+    $options = array();
+    $selectors = variable_get('webuipopover_added_selectors_array', array());
+    if (count($selectors)) {
+      foreach ($selectors as $selector) {
+        if (!empty($selector)) {
+          $options[$selector]['cssSelect'] = $selector;
+        }
+      }
+    }
+    $options['.webuipopover']['cssSelect'] = '.webuipopover';
+    webuipopover_add_webuipopover($options);
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function webuipopover_menu() {
+  $items['admin/config/user-interface/webuipopover'] = array(
+    'title' => 'webuipopover',
+    'description' => 'Configure settings related to the webuipopover module.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('webuipopover_admin'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'webuipopover.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_library().
+ */
+function webuipopover_library() {
+  $libraries = array();
+  $path = drupal_get_path('module', 'webuipopover');
+  $expath = $path . '/other_libs/excanvas_r3';
+
+  /*
+  $libraries['beautytips-jquery'] = array(
+    'title' => 'BeautyTips Jquery Plugin',
+    'website' => 'http://plugins.jquery.com/project/bt',
+    'version' => '0.9.5-rc1',
+    'js' => array($path . '/js/jquery.bt.min.js' => array()),
+  );
+  */
+  $libraries['webuipopover-module'] = array(
+    'title' => 'webuipopover Module',
+    'website' => 'http://drupal.org/project/webuipopover',
+    'version' => '7.x-2.x',
+    'js' => array($path . '/js/webuipopover.js' => array()),
+  );
+  /*
+  if (file_exists($expath . '/excanvas.compiled.js')) {
+    $libraries['excanvas_r3'] = array(
+      'title' => 'ExplorerCanvas',
+      'website' => 'http://excanvas.sourceforge.net/',
+      'version' => 'r3',
+      'js' => array($expath . '/excanvas.compiled.js' => array()),
+    );
+  }
+
+  $libraries['beautytips-ltr'] = array(
+    'title' => 'BeautyTips Module LTR support',
+    'website' => 'http://drupal.org/project/beautytips',
+    'version' => '7.x-2.x',
+    'css' => array($path . '/css/beautytips-ltr.css' => array()),
+    'dependencies' => array(
+      array('beautytips', 'beautytips-jquery'),
+    ),
+  );
+  */
+
+  $libraries['webuipopover-popover'] = array(
+    'title' => 'jQuery webui popover',
+    'website' => 'https://github.com/sandywalker/webui-popover',
+    'version' => '7.x-2.x',
+    'js' => array($path . '/js/jquery.webui-popover.min.js' => array()),
+  );
+
+  $libraries['webuipopover-popover-style'] = array(
+    'title' => 'jQuery webui popover Style',
+    'website' => 'https://github.com/sandywalker/webui-popover',
+    'version' => '7.x-2.x',
+    'css' => array($path . '/css/jquery.webui-popover.min.css' => array()),
+  );
+
+  return $libraries;
+}
+
+
+/**
+ * This is the API.  Call this function to add webuipopover.
+ *
+ * @param array $options - See README.txt for details
+ */
+function webuipopover_add_webuipopover($options = NULL) {
+  static $added = FALSE;
+  $settings = array('webuipopover' => array());
+  $js_added = drupal_add_js($data = NULL, 'setting');
+
+  if (count($options)) {
+    foreach ($options as $beautytip => $content) {
+
+      // Ensure the js settings are not added more than once
+      if (isset($js_added['setting']) && is_array($js_added['setting'])) {
+        foreach ($js_added['setting'] as $setting) {
+          if (is_array($setting['webuipopover'])) {
+            if (array_key_exists($beautytip, $setting['webuipopover'])) {
+              unset($content);
+            }
+          }
+        }
+      }
+
+      // Setup the settings array for adding js
+      if (isset($content) && is_array($content)) {
+        $style = isset($content['style']) ? $content['style'] : 'default';
+        unset($content['style']);
+        $settings['webuipopover'][$beautytip] = array_merge(webuipopover_get_style($style), $content);
+        $keys_no_add = array('cssSelect', 'style', 'list', 'text', 'preEval', 'ajaxDisableLink', 'animate');
+        foreach ($settings['webuipopover'][$beautytip] as $key => $value) {
+          // Ensure that numeric options are not passed as strings.
+          $settings['webuipopover'][$beautytip][$key] = is_numeric($value) ? (int) $value : $value;
+          if (!in_array($key, $keys_no_add)) {
+            $settings['webuipopover'][$beautytip]['list'][] = $key;
+          }
+        }
+      }
+    }
+
+    if ($added && !empty($settings['webuipopover'])) {
+      drupal_add_js($settings, 'setting');
+    }
+  }
+
+  if (!$added) {
+    // Add beautytips jQuery plugin and module js.
+    drupal_add_library('webuipopover', 'webuipopover-module');
+    drupal_add_library('webuipopover', 'webuipopover-popover');
+
+    // Add this for ie compatibility
+  //  drupal_add_library('beautytips', 'excanvas_r3');
+
+    drupal_add_js($settings, 'setting');
+   // if (variable_get('beautytips_ltr', FALSE)) {
+      drupal_add_library('webuipopover', 'webuipopover-popover-style');
+   // }
+    $added = TRUE;
+  }
+}
+
+/**
+ * Get all the defined beautytips styles
+ */
+function webuipopover_get_styles($reload = FALSE) {
+  $cache = cache_get('webuipopover:webuipopover-styles');
+  if (!$cache || $reload) {
+    $styles = module_invoke_all('define_webuipopover_styles');
+    // Save the beautytips style registry in the cache.
+    cache_set('webuipopover:webuipopover-styles', $styles);
+  }
+  else {
+    $styles = $cache->data;
+  }
+  return $styles;
+}
+
+/**
+ * Get an array of options that defines a particular style
+ */
+function webuipopover_get_style($style = 'default') {
+  $styles = webuipopover_get_styles();
+  return isset($styles[$style]) ? $styles[$style] : array();
+}
+
+/**
+ * Implements hook_define_webuipopover_styles().
+ */
+function webuipopover_define_webuipopover_styles() {
+  $styles['default'] = variable_get('webuipopover_defaults', array());
+  // Cleanup any problems with defaults.
+  if (count($styles['default'])) {
+    foreach ($styles['default'] as &$value) {
+      if (!is_array($value)) {
+        $value = check_plain($value);
+      }
+      else {
+        if (count($value)) {
+          foreach ($value as &$sub_value) {
+            $sub_value = check_plain($sub_value);
+          }
+        }
+      }
+    }
+  }
+
+  $styles['plain'] = array();
+  $styles['netflix'] = array(
+    'positions' => array('right', 'left'),
+    'fill' => '#FFF',
+    'padding' => 5,
+    'shadow' => TRUE,
+    'shadowBlur' => 12,
+    'strokeStyle' => '#B9090B',
+    'spikeLength' => 50,
+    'spikeGirth' => 60,
+    'cornerRadius' => 10,
+    'centerPointY' => .1,
+    'overlap' => -8,
+    'cssStyles' => array(
+      'fontSize' => '12px',
+      'fontFamily' => 'arial,helvetica,sans-serif',
+    ),
+  );
+  $styles['facebook'] = array(
+    'fill' => '#F7F7F7',
+    'padding' => 8,
+    'strokeStyle' => '#B7B7B7',
+    'cornerRadius' => 0,
+    'cssStyles' => array(
+      'fontFamily' => '"lucida grande",tahoma,verdana,arial,sans-serif',
+      'fontSize' => '11px',
+    ),
+  );
+  $styles['transparent'] = array(
+    'fill' => 'rgba(0, 0, 0, .8)',
+    'padding' => 20,
+    'strokeStyle' => '#CC0',
+    'strokeWidth' => 3,
+    'spikeLength' => 40,
+    'spikeGirth' => 40,
+    'cornerRadius' => 40,
+    'cssStyles' => array(
+      'color' => '#FFF',
+      'fontWeight' => 'bold',
+    ),
+  );
+  $styles['big-green'] = array(
+    'fill' => '#00FF4E',
+    'padding' => 20,
+    'strokeWidth' => 0,
+    'spikeLength' => 40,
+    'spikeGirth' => 40,
+    'cornerRadius' => 15,
+    'cssStyles' => array(
+      'fontFamily' => '"lucida grande",tahoma,verdana,arial,sans-serif',
+      'fontSize' => '14px',
+    ),
+  );
+  $styles['google-maps'] = array(
+    'positions' => array('top', 'bottom'),
+    'fill' => '#FFF',
+    'padding' => 15,
+    'strokeStyle' => '#ABABAB',
+    'strokeWidth' => 1,
+    'spikeLength' => 65,
+    'spikeGirth' => 40,
+    'cornerRadius' => 25,
+    'centerPointX' => .9,
+    'cssStyles' => array(),
+  );
+  $styles['hulu'] = array(
+    'fill' => '#F4F4F4',
+    'strokeStyle' => '#666666',
+    'spikeLength' => 20,
+    'spikeGirth' => 10,
+    'width' => 350,
+    'overlap' => 0,
+    'centerPointY' => 1,
+    'cornerRadius' => 0,
+    'cssStyles' => array(
+      'fontFamily' => '"Lucida Grande",Helvetica,Arial,Verdana,sans-serif',
+      'fontSize' => '12px',
+      'padding' => '10px 14px'
+    ),
+    'shadow' => TRUE,
+    'shadowColor' => 'rgba(0,0,0,.5)',
+    'shadowBlur' => 8,
+    'shadowOffsetX' => 4,
+    'shadowOffsetY' => 4,
+  );
+  return $styles;
+}
+

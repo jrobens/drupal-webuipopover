@@ -1,0 +1,36 @@
+<?php 
+
+/**
+ * @file
+ * webuipopover install/uninstall hooks
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function webuipopover_install() {
+  // Display IE warning
+  $path = drupal_get_path('module', 'webuipopover');
+  $link_readme = l('webuipopover Readme.txt', $path . '/README.txt');
+
+  // Set basic defaults
+  variable_set('webuipopover_defaults', array('cssStyles' => array()));
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function webuipopover_uninstall() {
+  $variables = array(
+    'webuipopover_always_add',
+    'webuipopover_added_selectors_array',
+    'webuipopover_default_style',
+    'webuipopover_custom_style',
+    'webuipopover_defaults',
+  );
+  foreach ($variables as $variable) {
+    variable_del($variable);
+  }
+
+  cache_clear_all('webuipopover:webuipopover-styles', 'cache');
+}

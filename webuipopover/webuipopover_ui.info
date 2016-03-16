@@ -1,0 +1,14 @@
+
+name = webuipopover UI
+description = Adds settings menu and contributed beautytip popups
+core = 7.x
+package = User interface 
+files[] = webuipopover_ui.module
+dependencies[] = webuipopover
+
+; Information added by drupal.org packaging script on 2012-05-04
+version = "7.x-2.0-beta2"
+core = "7.x"
+project = "webuipopover"
+datestamp = "1336148452"
+
