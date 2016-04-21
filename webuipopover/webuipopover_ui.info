@@ -1,6 +1,6 @@
 
 name = webuipopover UI
-description = Adds settings menu and contributed beautytip popups
+description = Adds settings menu and contributed webui popovers (TODO)
 core = 7.x
 package = User interface 
 files[] = webuipopover_ui.module

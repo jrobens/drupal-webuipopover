@@ -103,7 +103,7 @@
    * Determine if an element has already been processed.
    */
   function webuipopoverProcessed(element, addClass) {
-    // Tooltips module, so reverese dependency.
+    // Tooltips module, so reverse dependency.
     var tips =  $('.calendar_tooltips');
     tips.addClass('webui-popover-content');
     tips.css('display', "");

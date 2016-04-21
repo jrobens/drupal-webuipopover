@@ -1,6 +1,6 @@
 
 name = webuipopover Manager
-description = Adds graphical manager for creating custom webuipopover.
+description = Adds graphical manager for creating custom webuipopover (TODO).
 package = User interface
 dependencies[] = webuipopover
 core = 7.x
